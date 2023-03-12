@@ -1,4 +1,4 @@
-## --- Creation of a single spe object containing all samples ---
+## --- Making a single spe object containing all samples ---
 # To work with multiple samples we need to create a spe object for each one 
 # and then combine them into a single spe object using the cbind() function
 
