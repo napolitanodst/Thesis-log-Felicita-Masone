@@ -124,6 +124,8 @@ if (any(spe$sum_umi == 0)) {
 spe$ManualAnnotation <- "NA"                         
 check_spe(spe)
 
+## Examples of gene visualization in different samples
+
 # Hmox1; ENSMUSG00000005413
 p_list <-
   vis_grid_gene(
@@ -133,6 +135,18 @@ p_list <-
     return_plots = TRUE,
     spatial = FALSE,
   )
-
 cowplot::plot_grid(plotlist = p_list, ncol = 3)
 
+# Mt2; ENSMUSG00000031762
+p_list <- list()
+p_list <-
+  vis_grid_gene(
+    spe = spe[, spe$sample_id %in% c("control", "sham", "heme_1000")],
+    geneid = "Mt2; ENSMUSG00000031762",
+    assayname = "counts",
+    return_plots = TRUE,
+    spatial = FALSE,
+    sample_order = c("control", "sham", "heme_1000"),
+    point_size = 2
+  )
+cowplot::plot_grid(plotlist = p_list, ncol = 3)
