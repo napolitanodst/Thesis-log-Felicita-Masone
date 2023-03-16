@@ -28,11 +28,11 @@ spe$sum_gene <- colSums(counts(spe) > 0)
 spe <- scuttle::logNormCounts(spe)
 
 
-## 3--- ADD GENE ANNOTATION INFO (reference genome GRCm38.p6 http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/)
+## 3--- ADD GENE ANNOTATION INFO (reference genome GRCm38.p6 http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M23/)
 
 gtf <-                                           # Read in the gene information from the annotation GTF file (from genecode)
   rtracklayer::import(
-    "gencode.vM25.annotation.gtf"
+    "gencode.vM23.annotation.gtf"
   )
 
 gtf <- gtf[gtf$type == "gene"]                   # Subset to genes only
