@@ -5,6 +5,7 @@ library("SpatialExperiment")
 library("rtracklayer")
 library("lobstr")
 library("spatialLIBD")
+library("readr") 
 
 ## 1--- IMPORT THE DATA AS A SpatialExperiment OBJECT
 
@@ -75,7 +76,14 @@ if (any(spe$sum_umi == 0)) {
 
 ## 5--- check spe
 
-spe$ManualAnnotation <- "NA"                           #Add a variable for saving the manual annotations
+spe$ManualAnnotation <- "NA"                                                # Add a variable for saving the manual annotations
+
+control_anatomy <- read_csv("control/control_anatomy.csv")                  # Import anatomical information and add them to spe
+spe_c$anatomy <- control_anatomy$anatomy
+
+control_injection_site <- read_csv("control/control_injection_site.csv")    # Import the injection site data and add them to spe     
+spe_c$inj_site <- control_injection_site$injection_site
+
 check_spe(spe)
 
 ## 6--- Explore the data
