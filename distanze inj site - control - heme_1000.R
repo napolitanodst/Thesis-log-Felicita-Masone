@@ -4,14 +4,14 @@
 
 ## Importo le coordinate relative al campione control
 library(readr)
-tissue_positions_list <- read_csv("control/outs/spatial/tissue_positions_list.csv", 
+tissue_positions_list_control <- read_csv("control/outs/spatial/tissue_positions_list.csv", 
                                   col_names = FALSE)
 ## Rinomino le colonne 
 n <- c("Barcode", "in_tissue", "arrary_row", "array_col", "pixel_row", "pixel_col")
 names(tissue_positions_list_control) <- n
 
 ## remove spot not detected (in tissue == 0)
-tissue_positions_list <- subset(tissue_positions_list_control, in_tissue == 1)
+tissue_positions_list_control <- subset(tissue_positions_list_control, in_tissue == 1)
 
 ## Importo le informazioni riguardo il sito di iniezione
 control_injection_site <- read_csv("control/control_injection_site.csv")
