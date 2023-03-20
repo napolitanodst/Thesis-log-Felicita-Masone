@@ -33,7 +33,7 @@ inj_positions_control <- subset(control_positions, injection_site == "control")
 control_positions$distance <- NA
 i=1
 while(i <= length(control_positions$distance)){
-  control_positions[i,"distance"] <- sqrt((control_positions[i,"array_row"] - 44)^2 + (control_positions[i,"array_col"] - 70)^2)
+  control_positions[i,8] <- sqrt((control_positions[i,3] - 44)^2 + (control_positions[i,4] - 70)^2)
   i = i + 1
 }
 
@@ -82,7 +82,7 @@ inj_positions_heme_1000 <- subset(heme_1000_positions, injection_site == "heme")
 heme_1000_positions$distance <- NA
 i=1
 while(i <= length(heme_1000_positions$distance)){
-  heme_1000_positions[i,"distance"] <- sqrt((heme_1000_positions[i,"array_row"] - 52)^2 + (heme_1000_positions[i,"array_col"] - 70)^2)
+  heme_1000_positions[i,8] <- sqrt((heme_1000_positions[i,3] - 52)^2 + (heme_1000_positions[i,4] - 70)^2)
   i = i + 1
 }
 
