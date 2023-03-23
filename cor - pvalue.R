@@ -47,20 +47,3 @@ while(i <= nrow(expr_log_heme1000)) {
 
 names(cor_heme1000) <- rownames(rowData(spe_h1000))
 names(p_value_heme1000) <- rownames(rowData(spe_h1000))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
