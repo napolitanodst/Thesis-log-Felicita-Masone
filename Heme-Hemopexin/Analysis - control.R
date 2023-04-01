@@ -19,8 +19,6 @@ spe_c$sum_umi <- colSums(counts(spe_c))
 # continuous variable containing the number of genes that have at least 1 count
 spe_c$sum_gene <- colSums(counts(spe_c) > 0)
 
-spe_c <- scuttle::logNormCounts(spe_c)
-
 # gene annotation - reference genome GRCm38.p6 http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/
 gtf <-                                           
   rtracklayer::import(
@@ -41,26 +39,6 @@ rowRanges(spe_c) <- gtf[match_genes]
 rowData(spe_c)$gene_search <- paste0(
   rowData(spe_c)$gene_name, "; ", rowData(spe_c)$gene_id
 )
-
-# Filter spe from mitochondrial and not expressed genes
-is_mito <- which(seqnames(spe_c) == "chrM")
-spe_c$expr_chrM <- colSums(counts(spe_c)[is_mito, , drop = FALSE])
-spe_c$expr_chrM_ratio <- spe_c$expr_chrM / spe_c$sum_umi
-
-no_expr <- which(rowSums(counts(spe_c)) == 0)           
-length(no_expr) / nrow(spe_c) * 100                     
-spe_c <- spe_c[-no_expr, , drop = FALSE]
-
-summary(spe_c$sum_umi)
-
-if (any(spe_c$sum_umi == 0)) {
-  spots_no_counts <- which(spe_c$sum_umi == 0)
-  ## Number of spots with no counts
-  print(length(spots_no_counts))
-  ## Percent of spots with no counts
-  print(length(spots_no_counts) / ncol(spe_c) * 100)
-  spe_c <- spe_c[, -spots_no_counts, drop = FALSE]
-}
 
 # Anatomy info and injection site coords ----
 library(readr)
@@ -92,11 +70,70 @@ for(i in 1:nrow(control_positions)){
 
 colData(spe_c)$inj_site_distance <- control_positions$distance
 
+# Quality Control and data filtering ----
+library(scater)
+library(ggspavis)
+
+# identify mitochondrial genes
+is_mito <- grepl("(^MT-)|(^mt-)", rowData(spe_c)$gene_name)
+table(is_mito)
+
+# calculate per-spot QC metrics and store in colData
+spe_c <- addPerCellQC(spe_c, subsets = list(mito = is_mito))
+
+# histogram of numbers of expressed genes
+hist(colData(spe_c)$detected, breaks = 20)
+
+# Remove mitochondrial genes
+spe_c <- spe_c[!is_mito, ]
+
+# remove not expressed genes
+no_expr <- which(rowSums(counts(spe_c)) == 0)           
+length(no_expr) / nrow(spe_c) * 100                     
+spe_c <- spe_c[-no_expr, , drop = FALSE]
+
+summary(spe_c$sum)
+
+if (any(spe_c$sum == 0)) {
+  spots_no_counts <- which(spe_c$sum == 0)
+  ## Number of spots with no counts
+  print(length(spots_no_counts))
+  ## Percent of spots with no counts
+  print(length(spots_no_counts) / ncol(spe_c) * 100)
+  spe_c <- spe_c[, -spots_no_counts, drop = FALSE]
+}
+
+# Check the number of spots in which a gene is expressed and removal of genes expressed in less than 3 spots
+
+control_counts <- assays(spe_c)$counts
+control_counts <- as.matrix(control_counts)
+
+no_rel <- c()
+n <- 0
+
+for(i in 1:nrow(control_counts)){
+  for(j in 1:ncol(control_counts)){
+    if(control_counts[i,j] != 0){
+      n = n + 1
+    }
+  }
+  if(n <= 2){
+    no_rel = c(no_rel, i)
+  }
+  n = 0
+}
+remove(control_counts)
+
+spe_c <- spe_c[-no_rel, , drop = FALSE]      # remove gene expressed in less than 3 spots
+
+# Normalization
+spe_c <- scuttle::logNormCounts(spe_c)
+
 # Batch Correction on anatomy cluster ---- 
 library(sva)
 
-expr_counts <- assays(spe_c)$counts
-expr_counts <- as.matrix(expr_counts)
+control_counts <- assays(spe_c)$counts
+control_counts <- as.matrix(control_counts)
 
 batch <- c()
 for(i in 1:nrow(control_positions)){
@@ -137,7 +174,7 @@ control_positions$batch <- batch
 # we have some NAs in our anatomy info so we need to remove them
 NA_spot <- c(which(is.na(batch)))  
 batch_noNA <- batch[!is.na(batch)]
-expr_counts_noNA <- expr_counts[,-NA_spot] 
+control_counts_noNA <- control_counts[,-NA_spot] 
 
 spe_c_noNA <- spe_c[,-NA_spot]
 
@@ -148,6 +185,29 @@ BCmatrix_noNA_c <- ComBat_seq(counts = expr_counts_noNA,
                             full_mod = FALSE)
 
 assays(spe_c_noNA)$BC <- BCmatrix_noNA_c
+
+# Check the number of spots in which a gene is expressed and removal of genes expressed in less than 3 spots
+
+no_relNA <- c()
+n <- 0
+
+for(i in 1:nrow(BCmatrix_noNA_c)){
+  for(j in 1:ncol(BCmatrix_noNA_c)){
+    if(BCmatrix_noNA_c[i,j] != 0){
+      n = n + 1
+    }
+  }
+  if(n <= 2){
+    no_relNA = c(no_relNA, i)
+  }
+  n = 0
+}
+
+spe_c_noNA <- spe_c_noNA[-no_relNA, , drop = FALSE]
+
+spe_c_noNA <- logNormCounts(x = spe_c_noNA,            # Normalization of the batch corrected counts matrix
+                            assay.type = "BC",
+                            name = "BClogcounts")
 
 # Reduced dimension: UMAP ----
 library(scater)
@@ -167,8 +227,8 @@ plotUMAP(spe_c_noNA, colour_by = "anatomy")
 # Correlation and p.values ----
 
 # BEFORE batch effect removal
-expr_log_c <- assays(spe_c)$logcounts
-expr_log_c <- as.matrix(expr_log_c)
+control_logcounts <- assays(spe_c)$logcounts
+control_logcounts <- as.matrix(control_logcounts)
 distance_c <- spe_c$inj_site_distance
 
 # Calcolo la correlazione tra la distanza e l'espressione per ogni gene e il relativo p.value
@@ -176,8 +236,9 @@ cor_c <- c()
 p_value_c <- c()
 
 for(i in 1:nrow(expr_log_c)) {
-  cor_c[i] <- cor(distance_c, expr_log_c[i,])
-  test <- cor.test(distance_c, expr_log_c[i,])
+  zero <- which(control_logcounts[i,] == 0)
+  cor_c[i] <- cor(distance_c[-zero], control_logcounts[i, -zero])
+  test <- cor.test(distance_c[-zero], control_logcounts[i, -zero])
   p_value_c[i] <- test$p.value
 }
 
@@ -187,20 +248,31 @@ names(p_value_c) <- rownames(rowData(spe_c))
 hist(cor_c)
 hist(abs(cor_c))
 
-# geni correlati (p.value significativo)
+# correlated genes before batch correction
 padjust_bf <- p.adjust(p_value_c, method="fdr")
 p_sig_bf <- which(padjust_bf < 0.01)
 pv_sig_bf <- padjust_bf[p_sig_bf]
 
 # AFTER batch effect removal
+BClogcounts <- assays(spe_c_noNA)$BClogcounts
+BClogcounts <- as.matrix(BClogcounts)
 distance_noNA <- spe_c_noNA$inj_site_distance
 cor_c_noNA <- c()
 p_value_c_noNA <- c()
 
-for(i in 1:nrow(BCmatrix_noNA_c)) {
-  cor_c_noNA[i] <- cor(distance_noNA, BCmatrix_noNA_c[i,])
-  test <- cor.test(distance_noNA, BCmatrix_noNA_c[i,])
-  p_value_c_noNA[i] <- test$p.value
+for(i in 1:nrow(BClogcounts)) {
+  zero <- which(BClogcounts[i,] == 0)
+  if(!isEmpty(zero)){
+    cor_c_noNA[i] <- cor(distance_noNA[-zero], BClogcounts[i,-zero])
+    test <- cor.test(distance_noNA[-zero], BClogcounts[i,-zero])
+    p_value_c_noNA[i] <- test$p.value
+  }else{
+    if(isEmpty(zero)){
+      cor_c_noNA[i] <- cor(distance_noNA, BClogcounts[i,])
+      test <- cor.test(distance_noNA, BClogcounts[i,])
+      p_value_c_noNA[i] <- test$p.value
+    }
+  }
 }
 
 names(cor_c_noNA) <- rownames(rowData(spe_c_noNA))
@@ -209,10 +281,10 @@ names(p_value_c_noNA) <- rownames(rowData(spe_c_noNA))
 hist(cor_c_noNA)
 hist(abs(cor_c_noNA))
 
-# geni correlati (p.value significativo)
+# correlated genes after batch correction
 padjust_af <- p.adjust(p_value_c_noNA, method="fdr")
 p_sig_af <- which(padjust_af < 0.01)
 pv_sig_af <- padjust_af[p_sig_af]
 
-write.csv(pv_sig_af, "Analysis - control/geni_pvsig.csv")
-write.csv(cor_c_noNA, "Analysis - control/correlazioni.csv")
+write.csv(pv_sig_af, "Analysis - control/geni_pvsig_control.csv")
+write.csv(cor_c_noNA, "Analysis - control/correlazioni_control.csv")
