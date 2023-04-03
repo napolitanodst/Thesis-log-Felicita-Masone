@@ -266,7 +266,8 @@ hist(abs(cor_c_BC))
 padjust_af <- p.adjust(p_value_c_BC, method="fdr")
 pv_sig_af <- padjust_af[which(padjust_af < 0.01)]
 
-cor_pv_sig <- cor_c_BC[which(padjust_af < 0.01)]
+cor_pv_sig_c <- cor_c_BC[which(padjust_af < 0.01)]
 
 write.csv(pv_sig_af, "Analysis - control/geni_pvsig_control.csv")
-write.csv(cor_pv_sig, "Analysis - control/correlazioni_control.csv")
+write.csv(cor_c_BC, "Analysis - control/correlazioni_control.csv")
+write.csv(cor_pv_sig_c, "Analysis - heme 1000/correlazioni_control - geni_sig.csv")
