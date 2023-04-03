@@ -174,7 +174,7 @@ heme_1000_positions$batch <- batch
 # we have some NAs in our anatomy info so we need to remove them
 NA_spot <- c(which(is.na(batch)))  
 batch_noNA <- batch[!is.na(batch)]
-h1000_counts_noNA <- expr_counts[,-NA_spot] 
+h1000_counts_noNA <- h1000_counts[,-NA_spot] 
 
 spe_h1000_noNA <- spe_h1000[,-NA_spot]
 
