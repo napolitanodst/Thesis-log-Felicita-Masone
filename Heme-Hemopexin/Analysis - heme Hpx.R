@@ -19,8 +19,6 @@ spe_hH$sum_umi <- colSums(counts(spe_hH))
 # continuous variable containing the number of genes that have at least 1 count
 spe_hH$sum_gene <- colSums(counts(spe_hH) > 0)
 
-spe_hH <- scuttle::logNormCounts(spe_hH)
-
 # gene annotation - reference genome GRCm38.p6 http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/
 gtf <-                                           
   rtracklayer::import(
@@ -41,26 +39,6 @@ rowRanges(spe_hH) <- gtf[match_genes]
 rowData(spe_hH)$gene_search <- paste0(
   rowData(spe_hH)$gene_name, "; ", rowData(spe_hH)$gene_id
 )
-
-# Filter spe from mitochondrial and not expressed genes
-is_mito <- which(seqnames(spe_hH) == "chrM")
-spe_hH$expr_chrM <- colSums(counts(spe_hH)[is_mito, , drop = FALSE])
-spe_hH$expr_chrM_ratio <- spe_hH$expr_chrM / spe_hH$sum_umi
-
-no_expr <- which(rowSums(counts(spe_hH)) == 0)           
-length(no_expr) / nrow(spe_hH) * 100                     
-spe_hH <- spe_hH[-no_expr, , drop = FALSE]
-
-summary(spe_hH$sum_umi)
-
-if (any(spe_hH$sum_umi == 0)) {
-  spots_no_counts <- which(spe_hH$sum_umi == 0)
-  ## Number of spots with no counts
-  print(length(spots_no_counts))
-  ## Percent of spots with no counts
-  print(length(spots_no_counts) / ncol(spe_hH) * 100)
-  spe_hH <- spe_hH[, -spots_no_counts, drop = FALSE]
-}
 
 # Anatomy info ----
 library(readr)
@@ -86,11 +64,70 @@ for(i in 1:nrow(hemeHpx_1000_positions)){
 
 colData(spe_hH)$inj_site_distance <- hemeHpx_1000_positions$distance
 
+# Quality Control and data filtering ----
+library(scater)
+library(ggspavis)
+
+# identify mitochondrial genes
+is_mito <- grepl("(^MT-)|(^mt-)", rowData(spe_hH)$gene_name)
+table(is_mito)
+
+# calculate per-spot QC metrics and store in colData
+spe_hH <- addPerCellQC(spe_hH, subsets = list(mito = is_mito))
+
+# histogram of numbers of expressed genes
+hist(colData(spe_hH)$detected, breaks = 20)
+
+# Remove mitochondrial genes
+spe_hH <- spe_hH[!is_mito, ]
+
+# remove not expressed genes
+no_expr <- which(rowSums(counts(spe_hH)) == 0)           
+length(no_expr) / nrow(spe_hH) * 100                     
+spe_hH <- spe_hH[-no_expr, , drop = FALSE]
+
+summary(spe_hH$sum)
+
+if (any(spe_hH$sum == 0)) {
+  spots_no_counts <- which(spe_hH$sum == 0)
+  ## Number of spots with no counts
+  print(length(spots_no_counts))
+  ## Percent of spots with no counts
+  print(length(spots_no_counts) / ncol(spe_hH) * 100)
+  spe_hH <- spe_hH[, -spots_no_counts, drop = FALSE]
+}
+
+# Check the number of spots in which a gene is expressed and removal of genes expressed in less than 3 spots
+
+hH_counts <- assays(spe_hH)$counts
+hH_counts <- as.matrix(hH_counts)
+
+no_rel <- c()
+n <- 0
+
+for(i in 1:nrow(hH_counts)){
+  for(j in 1:ncol(hH_counts)){
+    if(hH_counts[i,j] != 0){
+      n = n + 1
+    }
+  }
+  if(n <= 2){
+    no_rel = c(no_rel, i)
+  }
+  n = 0
+}
+
+remove(hH_counts)
+spe_hH <- spe_hH[-no_rel, , drop = FALSE]
+
+# Normalization
+spe_hH <- scuttle::logNormCounts(spe_hH)
+
 # Batch Correction on anatomy cluster ---- 
 library(sva)
 
-expr_counts <- assays(spe_hH)$counts
-expr_counts <- as.matrix(expr_counts)
+hH_counts <- assays(spe_hH)$counts
+hH_counts <- as.matrix(hH_counts)
 
 batch <- c()
 for(i in 1:nrow(hemeHpx_1000_positions)){
@@ -131,17 +168,40 @@ hemeHpx_1000_positions$batch <- batch
 # we have some NAs in our anatomy info so we need to remove them
 NA_spot <- c(which(is.na(batch)))  
 batch_noNA <- batch[!is.na(batch)]
-expr_counts_noNA <- expr_counts[,-NA_spot] 
+hH_counts_noNA <- hH_counts[,-NA_spot] 
 
 spe_hH_noNA <- spe_hH[,-NA_spot]
 
-BCmatrix_noNA_c <- ComBat_seq(counts = expr_counts_noNA,
+BCmatrix_noNA_c <- ComBat_seq(counts = hH_counts_noNA,
                               batch = batch_noNA,
                               group = NULL,
                               covar_mod = NULL,
                               full_mod = FALSE)
 
-assays(spe_hH_noNA)$BC <- BCmatrix_noNA_c
+assays(spe_hH_noNA)$BC <- BCmatrix_noNA_hH
+
+# Check the number of spots in which a gene is expressed and removal of genes expressed in less than 3 spots
+
+no_relNA <- c()
+n <- 0
+
+for(i in 1:nrow(BCmatrix_noNA_hH)){
+  for(j in 1:ncol(BCmatrix_noNA_hH)){
+    if(BCmatrix_noNA_hH[i,j] != 0){
+      n = n + 1
+    }
+  }
+  if(n <= 2){
+    no_relNA = c(no_relNA, i)
+  }
+  n = 0
+}
+
+spe_hH_noNA <- spe_hH_noNA[-no_relNA, , drop = FALSE]
+
+spe_hH_noNA <- logNormCounts(x = spe_hH_noNA,
+                                assay.type = "BC",
+                                name = "BClogcounts")
 
 # Reduced dimension: UMAP ----
 library(scater)
@@ -161,17 +221,18 @@ plotUMAP(spe_hH_noNA, colour_by = "anatomy")
 # Correlation and p.values ----
 
 # BEFORE batch effect removal
-expr_log_hH <- assays(spe_hH)$logcounts
-expr_log_hH <- as.matrix(expr_log_hH)
+hH_logcounts <- assays(spe_hH)$logcounts
+hH_logcounts <- as.matrix(hH_logcounts)
 distance_hH <- spe_hH$inj_site_distance
 
 # Calcolo la correlazione tra la distanza e l'espressione per ogni gene e il relativo p.value
 cor_hH <- c()
 p_value_hH <- c()
 
-for(i in 1:nrow(expr_log_hH)) {
-  cor_hH[i] <- cor(distance_hH, expr_log_hH[i,])
-  test <- cor.test(distance_hH, expr_log_hH[i,])
+for(i in 1:nrow(hH_logcounts)) {
+  zero <- which(hH_logcounts[i,] == 0)
+  cor_hH[i] <- cor(distance_hH[-zero], hH_logcounts[i,-zero])
+  test <- cor.test(distance_hH[-zero], hH_logcounts[i,-zero])
   p_value_hH[i] <- test$p.value
 }
 
@@ -187,15 +248,26 @@ p_sig_bf <- which(padjust_bf < 0.01)
 pv_sig_bf <- padjust_bf[p_sig_bf]
 
 # AFTER batch effect removal
+BC_hH_logcounts <- assays(spe_hH_noNA)$BClogcounts
+BC_hH_logcounts <- as.matrix(BC_hH_logcounts)
 distance_noNA <- spe_hH_noNA$inj_site_distance
 cor_hH_noNA <- c()
 p_value_hH_noNA <- c()
 
-for(i in 1:nrow(BCmatrix_noNA_c)) {
-  cor_hH_noNA[i] <- cor(distance_noNA, BCmatrix_noNA_c[i,])
-  test <- cor.test(distance_noNA, BCmatrix_noNA_c[i,])
-  p_value_hH_noNA[i] <- test$p.value
-}
+for(i in 1:nrow(BC_hH_logcounts)) {
+  zero <- which(BC_hH_logcounts[i,] == 0)
+  if(!isEmpty(zero)){
+    cor_hH_noNA[i] <- cor(distance_noNA[-zero], BC_hH_logcounts[i,-zero])
+    test <- cor.test(distance_noNA[-zero], BC_hH_logcounts[i,-zero])
+    p_value_hH_noNA[i] <- test$p.value
+  }else{
+    if(isEmpty(zero)){
+      cor_hH_noNA[i] <- cor(distance_noNA, BC_hH_logcounts[i,])
+      test <- cor.test(distance_noNA, BC_hH_logcounts[i,])
+      p_value_hH_noNA[i] <- test$p.value
+    }
+  }
+}  
 
 names(cor_hH_noNA) <- rownames(rowData(spe_hH_noNA))
 names(p_value_hH_noNA) <- rownames(rowData(spe_hH_noNA))
@@ -208,5 +280,5 @@ padjust_af <- p.adjust(p_value_hH_noNA, method="fdr")
 p_sig_af <- which(padjust_af < 0.01)
 pv_sig_af <- padjust_af[p_sig_af]
 
-write.csv(pv_sig_af, "Analysis - heme Hpx/geni_pvsig.csv")
-write.csv(cor_hH_noNA, "Analysis - heme Hpx/correlazioni.csv")
+write.csv(pv_sig_af, "Analysis - heme Hpx/geni_pvsig_hemeHpx.csv")
+write.csv(cor_hH_noNA, "Analysis - heme Hpx/correlazioni_hemeHpx.csv")
