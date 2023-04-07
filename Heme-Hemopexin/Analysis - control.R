@@ -184,9 +184,9 @@ BCcounts <- ComBat_seq(counts = control_counts,
 
 assays(spe_c)$BC <- BCcounts
 
-spe_c_noNA <- logNormCounts(x = spe_c_noNA,            # Normalization of the batch corrected counts matrix
-                            assay.type = "BC",
-                            name = "BClogcounts")
+spe_c <- logNormCounts(x = spe_c,            # Normalization of the batch corrected counts matrix
+                       assay.type = "BC",
+                       name = "BClogcounts")
 
 # Reduced dimension: UMAP ----
 library(scater)
