@@ -268,6 +268,33 @@ pv_sig_af <- padjust_af[which(padjust_af < 0.01)]
 
 cor_pv_sig_h <- cor_h_BC[which(padjust_af < 0.01)]
 
-write.csv(pv_sig_af, "Analysis - heme 1000/geni_pvsig_h1000.csv")
-write.csv(cor_h_BC, "Analysis - heme 1000/correlazioni_h1000.csv")
-write.csv(cor_pv_sig_h, "Analysis - heme 1000/correlazioni_h1000 - geni_sig.csv")
+# Add all these informations to spe ----
+rowData(spe_h1000)$cor_before <- cor_h
+rowData(spe_h1000)$pvalue_before <- padjust_bf
+rowData(spe_h1000)$cor_after <- cor_h_BC
+rowData(spe_h1000)$pvalue_after <- padjust_af
+
+# Compute teh number of 0s values
+zero_x_gene <- c()
+n <- 0
+
+for(i in 1:nrow(h1000_counts)){
+  for(j in 1:ncol(h1000_counts)){
+    if(h1000_counts[i,j] == 0){
+      n = n + 1
+    }
+  }
+  zero_x_gene = c(zero_x_gene, n)
+  n = 0
+}
+
+no_zero_x_gene <- 2310 - zero_x_gene 
+
+rowData(spe_h1000)$zero_x_gene <- zero_x_gene
+rowData(spe_h1000)$no_zero_x_gene <- no_zero_x_gene
+
+# Rank p.values
+rank_bf <- rank(padjust_bf)
+rank_af <- rank(padjust_af)
+rowData(spe_h1000)$rank_before <- rank_bf
+rowData(spe_h1000)$rank_after <- rank_af
