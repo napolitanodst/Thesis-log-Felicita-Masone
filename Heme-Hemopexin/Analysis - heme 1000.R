@@ -121,7 +121,7 @@ for(i in 1:nrow(h1000_counts)){
       n = n + 1
     }
   }
-  if(n <= 2){
+  if(n < 3){
     no_rel = c(no_rel, i)
   }
   n = 0
@@ -142,9 +142,6 @@ h1000_counts <- as.matrix(h1000_counts)
 
 batch <- c()
 for(i in 1:nrow(heme_1000_positions)){
-  if(is.na(heme_1000_positions[i,5])){
-    batch[i] <- NA
-  }else{
     if(heme_1000_positions[i,5] == "caudate_putamen"){
       batch[i] <- 1
     }else{
@@ -213,13 +210,13 @@ p_value_h <- c()
 for(i in 1:nrow(h1000_logcounts)) {
   zero <- which(h1000_logcounts[i,] == 0)
   if(!isEmpty(zero)){
-    cor_h[i] <- cor(distance_h[-zero], h1000_logcounts[i,-zero])
-    test <- cor.test(distance_h[-zero], h1000_logcounts[i,-zero])
+    cor_h[i] <- cor(distance_h[-zero], h1000_logcounts[i,-zero], method = "spearman")
+    test <- cor.test(distance_h[-zero], h1000_logcounts[i,-zero], method = "spearman")
     p_value_h[i] <- test$p.value
   }else{
     if(isEmpty(zero)){
-      cor_h[i] <- cor(distance_h, h1000_logcounts[i,])
-      test <- cor.test(distance_h, h1000_logcounts[i,])
+      cor_h[i] <- cor(distance_h, h1000_logcounts[i,], method = "spearman")
+      test <- cor.test(distance_h, h1000_logcounts[i,], method = "spearman")
       p_value_h[i] <- test$p.value
     }
   }
@@ -244,13 +241,13 @@ p_value_h_BC <- c()
 for(i in 1:nrow(BC_h_logcounts)) {
   zero <- which(BC_h_logcounts[i,] == 0)
   if(!isEmpty(zero)){
-    cor_h_BC[i] <- cor(distance_h[-zero], BC_h_logcounts[i,-zero])
-    test <- cor.test(distance_h[-zero], BC_h_logcounts[i,-zero])
+    cor_h_BC[i] <- cor(distance_h[-zero], BC_h_logcounts[i,-zero], method = "spearman")
+    test <- cor.test(distance_h[-zero], BC_h_logcounts[i,-zero], method = "spearman")
     p_value_h_BC[i] <- test$p.value
   }else{
     if(isEmpty(zero)){
-      cor_h_BC[i] <- cor(distance_h, BC_h_logcounts[i,])
-      test <- cor.test(distance_h, BC_h_logcounts[i,])
+      cor_h_BC[i] <- cor(distance_h, BC_h_logcounts[i,], method = "spearman")
+      test <- cor.test(distance_h, BC_h_logcounts[i,], method = "spearman")
       p_value_h_BC[i] <- test$p.value
      }
    }
