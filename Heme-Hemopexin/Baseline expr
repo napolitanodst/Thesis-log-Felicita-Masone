@@ -1,0 +1,22 @@
+## Baseline
+
+# before BC
+counts_m <- assays(spe)$counts
+counts_m <- as.matrix(counts_m)
+rowsum_before <- rowSums(counts_m)/2310
+rank_base_before <- rank(rowsum_before, ties.method = "min")
+
+# after BC
+counts_BC <- assays(spe)$BC
+rowsum_after <- rowSums(counts_BC)/2310
+rank_base_after <- rank(rowsum_after, ties.method = "min")
+
+# Geni paper (ground truth)
+upgenes_names <- heme_response_up_regulated_genes$names
+heme_up_position <- c()
+for(i in 1:62){
+  heme_up_position[i] = which(tab[,2] == upgenes_names[i])
+}
+
+base_gt_before <- rank_base_before[heme_up_pos]
+base_gt_after <- rank_base_after[heme_up_pos]
