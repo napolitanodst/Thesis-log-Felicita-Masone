@@ -4,8 +4,8 @@
 pval_bf <- rowData(spe)$pvalue_before
 cor_bf <- rowData(spe)$cor_before
 
-upg_bf <- which(cor_bf >= 0.35 & pval_bf < 0.01)
-dng_bf <- which(cor_bf <= -0.35 & pval_bf < 0.01)
+upg_bf <- which(cor_bf >= 0.5 & pval_bf < 0.01)
+dng_bf <- which(cor_bf <= -0.5 & pval_bf < 0.01)
 
 col <- rep("gray", nrow(genes))
 col[upg_bf] <- "lightsalmon"
@@ -23,8 +23,8 @@ plot(x = cor_bf,
      pch = 20,
      main = "Before batch correction"
 )
-abline(v=-0.35, col="black", lty=2)
-abline(v=0.35, col="black", lty=2)
+abline(v=-0.5, col="black", lty=2)
+abline(v=0.5, col="black", lty=2)
 abline(h=-log(0.01), col="black", lty=2)
 x = c(cor_bf[dng_bf], cor_bf[upg_bf])
 y = c(pval_bf[dng_bf], pval_bf[upg_bf])
