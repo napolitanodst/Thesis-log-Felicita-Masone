@@ -1,22 +1,33 @@
 ## Baseline
 
-# before BC
-counts_m <- assays(spe)$counts
-counts_m <- as.matrix(counts_m)
-rowsum_before <- rowSums(counts_m)/2310
-rank_base_before <- rank(rowsum_before, ties.method = "min")
+# before
+counts_matrix <- assays(spe)$counts
+counts_matrix <- as.matrix(counts_matrix)
+average_expr_before <- rowSums(counts_matrix)/ncol(counts_matrix)
+mean_expr_before <- mean(average_expr_before)
 
-# after BC
-counts_BC <- assays(spe)$BC
-rowsum_after <- rowSums(counts_BC)/2310
-rank_base_after <- rank(rowsum_after, ties.method = "min")
-
-# Geni paper (ground truth)
-upgenes_names <- heme_response_up_regulated_genes$names
-heme_up_position <- c()
-for(i in 1:62){
-  heme_up_position[i] = which(tab[,2] == upgenes_names[i])
+dist_mean_before <- c()
+for(i in 1:length(average_expr_before)){
+  dist_mean_before[i] = abs(average_expr_before[i] - mean_expr_before)
 }
 
-base_gt_before <- rank_base_before[heme_up_pos]
-base_gt_after <- rank_base_after[heme_up_pos]
+rank_baseline_before <- rank(dist_mean_before, ties.method = "min")
+
+rowData(spe)$baseline_before <- average_expr_before
+rowData(spe)$rank_baseline_before <- rank_baseline_before
+
+# after
+BCcounts <- assays(spe)$BCcounts
+BCcounts <- as.matrix(BCcounts)
+average_expr_after <- rowSums(BCcounts)/ncol(BCcounts)
+mean_expr_after <- mean(average_expr_after)
+
+dist_mean_after <- c()
+for(i in 1:length(average_expr_after)){
+  dist_mean_after[i] = abs(average_expr_after[i] - mean_expr_after)
+}
+
+rank_baseline_after <- rank(dist_mean_after, ties.method = "min")
+
+rowData(spe)$baseline_after <- average_expr_after
+rowData(spe)$rank_baseline_after <- rank_baseline_after
