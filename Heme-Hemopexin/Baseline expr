@@ -1,9 +1,11 @@
 ## Baseline
 
+non0s_x_gene <- rowData(spe_h1000)$no_zero_x_gene
+
 # before
 counts_matrix <- assays(spe)$counts
 counts_matrix <- as.matrix(counts_matrix)
-average_expr_before <- rowSums(counts_matrix)/ncol(counts_matrix)
+average_expr_before <- rowSums(counts_matrix)/non0s_x_gene
 mean_expr_before <- mean(average_expr_before)
 
 dist_mean_before <- c()
@@ -19,7 +21,7 @@ rowData(spe)$rank_baseline_before <- rank_baseline_before
 # after
 BCcounts <- assays(spe)$BCcounts
 BCcounts <- as.matrix(BCcounts)
-average_expr_after <- rowSums(BCcounts)/ncol(BCcounts)
+average_expr_after <- rowSums(BCcounts)/non0s_x_gene
 mean_expr_after <- mean(average_expr_after)
 
 dist_mean_after <- c()
