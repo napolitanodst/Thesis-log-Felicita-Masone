@@ -39,6 +39,8 @@ SVG_before <- results[,c("g", "LLR", "pval")]
 # > -0.2961986
 # spearman -0.9997527
 rank_llr <- rank(SVG_before$LLR, ties.method = "min")
+
+# Ranks performed on LLR classify genes from least significant to most significant so it is necessary to invert ranks in order to perform method comparison analyses
 SVG_before$rank_llr <- 16187 - rank_llr
 rownames(SVG_before) <- c(1:16186)
 
