@@ -1,7 +1,8 @@
 ## SVG 
 library(spatialDE)
 
-# preparazione input
+# BEFORE BATCH CORRECTION
+# preparing data for input
 x_cord <- spe$array_row
 y_cord <- spe$array_col
 spots <- colnames(spe)
@@ -18,7 +19,7 @@ total_counts <- colSums(expr_counts)
 sample_info$total_counts <- total_counts
 coordinates <- sample_info[,-3]
 
-# pipeline svg
+# spatialDE pipeline
 expr_norm <- stabilize(expr_counts)
 expr_resid <- regress_out(expr_norm, sample_info = sample_info)
 results <- spatialDE::run(expr_resid, coordinates = coordinates)
@@ -35,7 +36,7 @@ ms_results <- model_search(
 
 SVG_before <- results[,c("g", "LLR", "pval")]
 
-# Il pvalue è calcolato sulla statistica LLR, per cui facciamo i rank di questi valori
+# Pvalues are computed on the LLR statistic, so we rank these values
 # cor_pLLR <- cor(SVG_before$LLR, SVG_before$pval)
 # > -0.2961986
 # spearman -0.9997527
@@ -65,7 +66,7 @@ rownames(SVG_BC) <- c(1:16186)
 
 SVG <- merge(SVG_before, SVG_BC, by = "gene_id")
 
-# Posizioni dei geni ground truth
+# ground truth gene positions in SVG
 SVG_up <- c()
 up_id <- heme_upgenes$id
 for (i in 1:62) {
