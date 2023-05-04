@@ -18,5 +18,5 @@ In the [spatialLIBD](https://github.com/napolitanodst/Thesis-log-Felicita-Masone
 In the [Wiki](https://github.com/napolitanodst/Thesis-log-Felicita-Masone/wiki) section you can find all the updates about how to perform the analyses as well as links to interesting papers and datasets on spatial transcriptomics that I have collected throughout these months.
 
 ## Dataset
-All data are available on Gene Expression Omnibus under the accession number GSE182127.
+All data are available on Gene Expression Omnibus under the accession number *GSE182127*.
 The dataset can also be downloaded from Zenodo at this [link](https://doi.org/10.5281/zenodo.5638720).
