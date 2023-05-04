@@ -24,8 +24,6 @@ expr_norm <- stabilize(expr_counts)
 expr_resid <- regress_out(expr_norm, sample_info = sample_info)
 results <- spatialDE::run(expr_resid, coordinates = coordinates)
 
-head(results[order(results$qval), ])
-
 de_results <- results[results$qval < 0.01, ] 
 
 ms_results <- model_search(
@@ -55,7 +53,13 @@ expr_norm_BC <- stabilize(BCcounts)
 expr_resid_BC <- regress_out(expr_norm_BC, sample_info = sample_info_BC)
 results_BC <- spatialDE::run(expr_resid_BC, coordinates = coordinates)
 
-head(results[order(results_BC$qval), ])
+de_results_BC <- results_BC[results_BC$qval < 0.01, ] 
+
+ms_results_BC <- model_search(
+  expr_resid_BC,
+  coordinates = coordinates,
+  de_results = de_results_BC
+)
 
 SVG_BC <- results_BC[,c("g", "LLR", "pval")]
 rownames(SVG_BC) <- c(1:16186)
