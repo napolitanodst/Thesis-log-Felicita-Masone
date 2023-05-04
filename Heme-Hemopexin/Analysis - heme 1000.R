@@ -127,7 +127,6 @@ for(i in 1:nrow(h1000_counts)){
   n = 0
 }
 
-remove(h1000_counts)
 spe <- spe[-no_rel, , drop = FALSE]
 heme_1000_positions <- heme_1000_positions[-NA_spot,]
 
@@ -136,9 +135,6 @@ spe <- scuttle::logNormCounts(spe)
 
 # Batch Correction on anatomy cluster ---- 
 library(sva)
-
-h1000_counts <- assays(spe)$counts
-h1000_counts <- as.matrix(h1000_counts)
 
 batch <- c()
 for(i in 1:nrow(heme_1000_positions)){
@@ -203,13 +199,13 @@ spe <- runUMAP(spe, exprs_values = "BClogcounts", name = "UMAP_BClog")
 plotReducedDim(object = spe, dimred = "UMAP_BClog", colour_by = "anatomy")
 
 # Correlation and p.values ----
+# Computing correlation and pvalue between distance and expression for each gene
 
 # BEFORE batch effect removal
 counts_log <- assays(spe)$logcounts
 counts_log <- as.matrix(counts_log)
 distance_h <- spe$inj_site_distance
 
-# Calcolo la correlazione tra la distanza e l'espressione per ogni gene e il relativo p.value
 cor_b <- c()
 pval_b <- c()
 
@@ -234,7 +230,7 @@ names(pval_b) <- rownames(rowData(spe))
 hist(cor_b)
 hist(abs(cor_b))
 
-# Correzione pvalue
+# pvalue correction
 padjust_bf <- p.adjust(pval_b, method="fdr")
 
 # AFTER batch effect removal
@@ -264,7 +260,7 @@ names(pval_a) <- rownames(rowData(spe))
 hist(cor_a)
 hist(abs(cor_a))
 
-# correzione pvalue
+# pvalue correction
 padjust_af <- p.adjust(pval_a, method="fdr")
 
 # Add informations to spe
@@ -274,9 +270,7 @@ rowData(spe)$pvalue_before <- padjust_bf
 rowData(spe)$cor_after <- cor_a
 rowData(spe)$pvalue_after <- padjust_af
 
-# Compute teh number of 0s values
-h1000_counts <- assays(spe)$counts
-h1000_counts <- as.matrix(h1000_counts)
+# Compute the number of 0s values
 zero_x_gene <- c()
 n <- 0
 
@@ -290,7 +284,7 @@ for(i in 1:nrow(h1000_counts)){
   n = 0
 }
 
-no_zero_x_gene <- 2310 - zero_x_gene 
+no_zero_x_gene <- 2311 - zero_x_gene 
 
 rowData(spe)$zero_x_gene <- zero_x_gene
 rowData(spe)$no_zero_x_gene <- no_zero_x_gene
