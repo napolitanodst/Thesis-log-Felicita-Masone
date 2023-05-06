@@ -107,25 +107,22 @@ if (any(spe$sum == 0)) {
   spe <- spe[, -spots_no_counts, drop = FALSE]
 }
 
+# Compute the number of 0s values
+zero_x_gene <- c()
+for(i in 1:nrow(h1000_counts)){
+  zero_x_gene[i] = sum(h1000_counts[i,] == 0)
+}
+
+no_zero_x_gene <- 2310 - zero_x_gene 
+rowData(spe)$zero_x_gene <- zero_x_gene
+rowData(spe)$no_zero_x_gene <- no_zero_x_gene
+
 # Check the number of spots in which a gene is expressed and removal of genes expressed in less than 3 spots
 
 h1000_counts <- assays(spe)$counts
 h1000_counts <- as.matrix(h1000_counts)
 
-no_rel <- c()
-n <- 0
-
-for(i in 1:nrow(h1000_counts)){
-  for(j in 1:ncol(h1000_counts)){
-    if(h1000_counts[i,j] != 0){
-      n = n + 1
-    }
-  }
-  if(n <= 2){
-    no_rel = c(no_rel, i)
-  }
-  n = 0
-}
+no_rel <- (which(no_zero_x_gene < 3))
 
 spe <- spe[-no_rel, , drop = FALSE]
 heme_1000_positions <- heme_1000_positions[-NA_spot,]
@@ -136,41 +133,7 @@ spe <- scuttle::logNormCounts(spe)
 # Batch Correction on anatomy cluster ---- 
 library(sva)
 
-batch <- c()
-for(i in 1:nrow(heme_1000_positions)){
-    if(heme_1000_positions[i,5] == "caudate_putamen"){
-      batch[i] <- 1
-    }else{
-      if(heme_1000_positions[i,5] == "cortex"){
-        batch[i] <- 2
-      }else{
-        if(heme_1000_positions[i,5] == "thalamus"){
-          batch[i] <- 3
-        }else{
-          if(heme_1000_positions[i,5] == "globus_pallidus"){
-            batch[i] <- 4
-          }else{
-            if(heme_1000_positions[i,5] == "plexus"){
-              batch[i] <- 5
-            }else{
-              if(heme_1000_positions[i,5] == "hypothalamus"){
-                batch[i] <- 6
-              }else{
-                if(heme_1000_positions[i,5] == "corpus_callosum"){
-                  batch[i] <- 7
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-heme_1000_positions$batch <- batch
-
-## The combat_seq function also take "factors" as input, so another way to correct
-## for anatomic batch is the following:
-#  > batch <- as.factor(spe$anatomy)
+batch <- as.factor(spe$anatomy)
 
 BCcounts <- ComBat_seq(counts = h1000_counts,
                               batch = batch,
@@ -210,13 +173,13 @@ cor_b <- c()
 pval_b <- c()
 
 for(i in 1:nrow(counts_log)) {
-  zero <- which(counts_log[i,] == 0)
-  if(!isEmpty(zero)){
-    cor_b[i] <- cor(distance_h[-zero], counts_log[i,-zero], method = "spearman")
-    test <- cor.test(distance_h[-zero], counts_log[i,-zero], method = "spearman")
+  zero_positions <- which(counts_log[i,] == 0)
+  if(!isEmpty(zero_positions)){
+    cor_b[i] <- cor(distance_h[-zero_positions], counts_log[i,-zero_positions], method = "spearman")
+    test <- cor.test(distance_h[-zero_positions], counts_log[i,-zero_positions], method = "spearman")
     pval_b[i] <- test$p.value
   }else{
-    if(isEmpty(zero)){
+    if(isEmpty(zero_positions)){
       cor_b[i] <- cor(distance_h, counts_log[i,], method = "spearman")
       test <- cor.test(distance_h, counts_log[i,], method = "spearman")
       pval_b[i] <- test$p.value
@@ -240,13 +203,13 @@ cor_a <- c()
 pval_a <- c()
 
 for(i in 1:nrow(BC_log)) {
-  zero <- which(BC_log[i,] == 0)
+  zero_positions <- which(BC_log[i,] == 0)
   if(!isEmpty(zero)){
-    cor_a[i] <- cor(distance_h[-zero], BC_log[i,-zero], method = "spearman")
-    test <- cor.test(distance_h[-zero], BC_log[i,-zero], method = "spearman")
+    cor_a[i] <- cor(distance_h[-zero_positions], BC_log[i,-zero_positions], method = "spearman")
+    test <- cor.test(distance_h[-zero_positions], BC_log[i,-zero_positions], method = "spearman")
     pval_a[i] <- test$p.value
   }else{
-    if(isEmpty(zero)){
+    if(isEmpty(zero_positions)){
       cor_a[i] <- cor(distance_h, BC_log[i,], method = "spearman")
       test <- cor.test(distance_h, BC_log[i,], method = "spearman")
       pval_a[i] <- test$p.value
@@ -269,18 +232,6 @@ rowData(spe)$pvalue_before <- padjust_bf
 
 rowData(spe)$cor_after <- cor_a
 rowData(spe)$pvalue_after <- padjust_af
-
-# Compute the number of 0s values
-zero_x_gene <- c()
-
-for(i in 1:nrow(h1000_counts)){
-  zero_x_gene[i] = sum(h1000_counts[i,] == 0)
-}
-
-no_zero_x_gene <- 2311 - zero_x_gene 
-
-rowData(spe)$zero_x_gene <- zero_x_gene
-rowData(spe)$no_zero_x_gene <- no_zero_x_gene
 
 # Rank p.values
 rank_bf <- rank(padjust_bf, ties.method = "min")
