@@ -272,16 +272,9 @@ rowData(spe)$pvalue_after <- padjust_af
 
 # Compute the number of 0s values
 zero_x_gene <- c()
-n <- 0
 
 for(i in 1:nrow(h1000_counts)){
-  for(j in 1:ncol(h1000_counts)){
-    if(h1000_counts[i,j] == 0){
-      n = n + 1
-    }
-  }
-  zero_x_gene = c(zero_x_gene, n)
-  n = 0
+  zero_x_gene[i] = sum(h1000_counts[i,] == 0)
 }
 
 no_zero_x_gene <- 2311 - zero_x_gene 
