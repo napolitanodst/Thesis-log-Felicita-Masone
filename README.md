@@ -44,4 +44,4 @@ This is the short paper that Professor Francesco Napolitano and I presented at t
 ## [LaTeX thesis template](https://github.com/napolitanodst/Thesis-log-Felicita-Masone/blob/main/Template%20tesi%20LaTeX.zip)
 In this zipped folder, you will find my LaTeX thesis template. To use it, simply download the folder and upload it to Overleaf.
 
-## [Full text thesis (it)](https://github.com/napolitanodst/Thesis-log-Felicita-Masone/blob/main/Tesi%20completa.zip)
+## [Full thesis (it)](https://github.com/napolitanodst/Thesis-log-Felicita-Masone/blob/main/Tesi%20completa.zip)
