@@ -1,10 +1,12 @@
 # Thesis log
 
 ## Heme-Hemopexin
-In the 'Heme-Hemopexin' directory you will find three R scripts:
-* Analysis - heme 1000
-* Baseline method
-* spatialDE pipeline - SVG 
+In the 'Heme-Hemopexin' directory, you will find three R scripts and two subfolders:
+* Analysis - heme 1000.R
+* Baseline method.R
+* spatialDE pipeline - SVG.R
+* Significant genes
+* Supplementary
 
 #### Significant genes
 The 'Significant Genes' directory contains the script (`Extract sig genes.R`) that I used to extract significant genes, as well as four CSV files with the resulting genes before and after batch correction.:
