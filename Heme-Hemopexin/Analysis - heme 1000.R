@@ -108,6 +108,10 @@ if (any(spe$sum == 0)) {
 }
 
 # Compute the number of 0s values
+
+h1000_counts <- assays(spe)$counts
+h1000_counts <- as.matrix(h1000_counts)
+
 zero_x_gene <- c()
 for(i in 1:nrow(h1000_counts)){
   zero_x_gene[i] = sum(h1000_counts[i,] == 0)
@@ -118,9 +122,6 @@ rowData(spe)$zero_x_gene <- zero_x_gene
 rowData(spe)$no_zero_x_gene <- no_zero_x_gene
 
 # Check the number of spots in which a gene is expressed and removal of genes expressed in less than 3 spots
-
-h1000_counts <- assays(spe)$counts
-h1000_counts <- as.matrix(h1000_counts)
 
 no_rel <- (which(no_zero_x_gene < 3))
 
